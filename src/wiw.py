@@ -35,6 +35,13 @@ for character in characters_query:
 characters = list(characters)
 properties = list(properties)
 known_properties = dict()
+excluyent_properties = {
+    "man": "woman", "woman": "man",
+    "short_hair": "long_hair", "long_hair": "short_hair",
+    "small_nose": "big_nose", "big_nose": "small_nose",
+    "small_mouth": "big_mouth", "big_mouth": "small_nose",
+    "brown_eyes": "blue_eyes", "blue_eyes": "brown_eyes"
+}
 
 print("Piensa en uno de los personajes :D")
 #input("Presiona [ENTER] para continuar ")
@@ -42,6 +49,11 @@ print("Piensa en uno de los personajes :D")
 while True:
     random_property = choice(properties)
     properties.remove(random_property)
+
+    if random_property in excluyent_properties.keys():
+        excluyent_property = excluyent_properties[random_property]
+        print(excluyent_property)
+        properties.remove(excluyent_property)
 
     question = input(f"¿{random_property}? (s/n): ")
     if question.lower() == "s":
