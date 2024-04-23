@@ -8,7 +8,7 @@ character(charles, [man, moustache, blonde, brown_eyes, thick_lips, big_mouth, b
 
 character(richard, [man, bald, beard, brown_eyes, big_ears, moustache, long_face, small_nose]).
 
-character(eric, [man, blonde, gorra, hat, brown_eyes, big_mouth, small_nose]).
+character(eric, [man, blonde, cap, hat, brown_eyes, big_mouth, small_nose]).
 
 character(alex, [man, moustache, black_hair, brown_eyes, big_mouth, thick_lips, big_ears, short_hair, small_nose]).
 

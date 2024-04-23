@@ -3,16 +3,30 @@ from os.path import join
 from pyswip import Prolog
 from random import choice
 
-prolog = Prolog()
 
-PATH = getcwd()
-prolog.consult(join(PATH, "src/wiw.pl"))
+class bidict(dict):
+    def __init__(self, *args, **kwargs):
+        super(bidict, self).__init__(*args, **kwargs)
+        self.inverse = {}
+        for key, value in self.items():
+            self.inverse.setdefault(value, []).append(key)
 
-characters = set()
-properties = set()
+    def __setitem__(self, key, value):
+        if key in self:
+            self.inverse[self[key]].remove(key)
+        super(bidict, self).__setitem__(key, value)
+        self.inverse.setdefault(value, []).append(key)
+
+    def __delitem__(self, key):
+        self.inverse.setdefault(self[key], []).remove(key)
+        if self[key] in self.inverse and not self.inverse[self[key]]:
+            del self.inverse[self[key]]
+        super(bidict, self).__delitem__(key)
+
 
 def query(query_string):
     return list(prolog.query(query_string))
+
 
 def character_has_property(character, property):
     character_properties = query(f"character({character}, Properties)")[0]
@@ -23,51 +37,70 @@ def character_has_property(character, property):
     
     return False
 
+
+prolog = Prolog()
+
+PATH = getcwd()
+prolog.consult(join(PATH, "src/wiw.pl"))
+
+# unique_properties = set()
+# possible_characters = list()
+# fill both from prolog
+# ask most relevant question (the feature that appears the most accross characters)
+# remove excluyen features
+# remove characters and features that doesn't match
+# repeat until one character remains (if answered correctly)
+
+unique_properties = dict()
+possible_characters = list()
+
+excluyent_properties = bidict({
+    "man": "woman",
+    "short_hair": "long_hair",
+    "small_nose": "big_nose",
+    "small_mouth": "big_mouth",
+    "brown_eyes": "blue_eyes"
+})
+
 characters_query = query("character(Name, Properties)")
 
 for character in characters_query:
-    name = character["Name"]
-    character_properties = character["Properties"]
+    for property in character["Properties"]:
+        if property not in unique_properties.keys():
+            unique_properties[property] = 1
+        else:
+            unique_properties[property] += 1
 
-    characters.add(name)
-    properties.update(character_properties)
+    possible_characters.append(character["Name"])
 
-characters = list(characters)
-properties = list(properties)
-known_properties = dict()
-excluyent_properties = {
-    "man": "woman", "woman": "man",
-    "short_hair": "long_hair", "long_hair": "short_hair",
-    "small_nose": "big_nose", "big_nose": "small_nose",
-    "small_mouth": "big_mouth", "big_mouth": "small_nose",
-    "brown_eyes": "blue_eyes", "blue_eyes": "brown_eyes"
-}
+unique_properties = dict(sorted(unique_properties.items(), key=lambda item: item[1]))
 
-print("Piensa en uno de los personajes :D")
-#input("Presiona [ENTER] para continuar ")
+print("Think about a character :D")
 
 while True:
-    random_property = choice(properties)
-    properties.remove(random_property)
+    len_unique_properties = len(unique_properties.keys())
+    random_property = list(unique_properties.keys())[len_unique_properties//2]
+    
+    while (question := input(f"{random_property}? (y/n): ").lower()) not in ["y", "n"]:
+        print("Invalid response")
 
-    if random_property in excluyent_properties.keys():
-        excluyent_property = excluyent_properties[random_property]
-        print(excluyent_property)
-        properties.remove(excluyent_property)
-
-    question = input(f"¿{random_property}? (s/n): ")
-    if question.lower() == "s":
+    if question == "y":
         question = True
     else:
         question = False
 
-    known_properties[random_property] = question
+    del unique_properties[random_property]
+    try:
+        excluyent_property = excluyent_properties[random_property]
+        del unique_properties[excluyent_property]
+    except KeyError:
+        pass
+    
+    possible_characters = [char for char in possible_characters if (question == character_has_property(char, random_property))]
 
-    characters = [character for character in characters if question == character_has_property(character, random_property)]
-
-    if len(characters) == 1:
-        print("Gané :p, personaje:", characters[0])
+    if len(possible_characters) == 1:
+        print("I won :P, your character was:", possible_characters[0])
         break
-    elif len(characters) == 0:
-        print("No me engañes :c")
+    elif len(possible_characters) == 0:
+        print("Something didn't go well :c")
         break
